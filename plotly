@@ -1,0 +1,43 @@
+#Upload to Plotly value with date as x axis
+
+write_first() {
+	time=$(date +"%Y-%m-%d %H:%M:%S")
+	data=`cat /sys/class/thermal/thermal_zone0/temp`
+	echo 'un=larsenkb&key=3b0ltahrtu&origin=plot&platform=lisp&args=[' >/tmp/plotly.txt
+	echo '["'$time'"' >> /tmp/plotly.txt
+	echo ', ['$data >> /tmp/plotly.txt
+	echo ']&kwargs={"filename": "garage temp", "fileopt": "extend", "style": {"type": "scatter"}, "layout": {"title": "Garage Temperature", "xaxis": {"name": "Time"}, "yaxis": {"name": "Temperature (millicentigrade)"}}, "world_readable": "true"}'>>/tmp/plotly.txt
+}
+
+write_entry() {
+	time=$(date +"%Y-%m-%d %H:%M:%S")
+	data=`cat /sys/class/thermal/thermal_zone0/temp`
+	sed -e "2s/$/, \"$time\"/" -i /tmp/plotly.txt
+	sed -e "3s/$/, $data/" -i /tmp/plotly.txt
+}
+
+write_footer() {
+	echo ']&kwargs={"filename": "temperature", "fileopt": "extend", "style": {"type": "scatter"}, "layout": {"title": "experimental data"}, "world_readable": "true"}'>>/tmp/plotly.txt
+	curl -X POST -d @/tmp/plotly.txt https://plot.ly/clientresp -H "HTTP/1.1" -k -v
+}
+
+case $1 in
+start)
+	write_first
+	;;
+append)
+	write_entry
+	;;
+close)
+	sed -e "2s/$/]/" -i /tmp/plotly.txt
+	sed -e "3s/$/]/" -i /tmp/plotly.txt
+	curl -X POST -d @/tmp/plotly.txt https://plot.ly/clientresp -H "HTTP/1.1" -k -v
+	;;
+send)
+	curl -X POST -d @/tmp/plotly.txt https://plot.ly/clientresp -H "HTTP/1.1" -k -v
+	;;
+*)
+	echo "Specify start, append, or close"
+	;;
+esac
+

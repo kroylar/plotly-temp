@@ -1,0 +1,14 @@
+#!/bin/bash
+while true
+do
+	i="0"
+	plotly start
+	sleep 60
+	while [ $i -lt 29 ]
+	do
+		plotly append
+		i=$[$i+1]
+		sleep 60
+	done
+	plotly close
+done
